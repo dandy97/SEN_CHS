@@ -50,12 +50,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				{
 					motor_chassis[0].speed_raw = (float)((short)(Data[2]<<8 | Data[3]));
 					motor_chassis[0].speed_set = (float)(motor_chassis[0].speed_raw / 100);
-					motor_trigger.bullet_launch = Data[4];
+					motor_trigger.bullet_launch = Data[4];//Ò£¿Ø×ó±ß²¦¸Ë
 					motor_chassis[0].chassis_stop = Data[4];
-					motor_chassis[0].chassis_mode = Data[6];
-					motor_chassis[1].chassis_mode = Data[6];
-					motor_trigger.chassis_mode = Data[6];
-					autoshoot_open = Data[7];
+					motor_chassis[0].chassis_mode = motor_chassis[1].chassis_mode = motor_trigger.shoot_mode = Data[6];//Ò£¿ØÓÒ±ß²¦¸Ë
+					motor_chassis[0].target = motor_trigger.target =  Data[7];//·¢ÏÖÄ¿±ê
 					break;
 				}
 				default:

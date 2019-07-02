@@ -39,6 +39,8 @@ typedef struct
 
 	uint16_t rc_s_time;
 
+	uint32_t shoot_ready_time;
+	
 	bool_t move_flag;
 	uint32_t cmd_time;
 	uint32_t run_time;
@@ -68,6 +70,6 @@ void Shoot_Set_Mode(void);
 //射击数据更新
 void Shoot_Feedback_Update(void);
 //射击循环
-int16_t shoot_control_loop(uint16_t shoot_heat);
+int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_output);
 
 #endif

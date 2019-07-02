@@ -56,6 +56,21 @@
 //240DPI	每240点一英寸
 #define DPI_POINT_TO_CENTIMETER	(2.54f / 240.0f)
 
+typedef enum
+{
+	INIT_MODE = 0,
+	RC_MODE,
+	AUTO_MODE,
+	STOP_MODE
+} chassis_mode_e;
+
+typedef enum
+{
+	auto_ready = 0,
+	auto_find,
+	auto_attack,
+} auto_mode_e;
+
 typedef struct
 {
   const motor_measure_t *chassis_motor_measure;
@@ -94,7 +109,11 @@ typedef struct
 	uint16_t pass_curve_2;						//过第二个弯道
 	uint16_t return_curve_2;					//返回第二个弯道
 	
-	uint8_t stop_run;
+	uint8_t  mains_power_shooter_output;
+	uint32_t hurd_type;
+  uint32_t last_hurd_type;
+	uint8_t  target;
+	uint8_t  stop_run;
 	float    bullet_speed;							//射速
 	uint8_t  bullet_freq;			        //射频
 	uint16_t volt;							      //电压
@@ -134,19 +153,6 @@ typedef struct
 //  fp32 chassis_roll;  //陀螺仪和云台电机叠加的roll角度
 } chassis_move_t;
 
-typedef enum
-{
-	RC_MODE = 0,
-	AUTO_MODE,
-} chassis_mode_e;
-
-typedef enum
-{
-	auto_init = 0,
-	auto_run,
-	auto_shoot,
-} auto_mode_e;
-
 extern chassis_move_t chassis_move;
 
 //底盘任务
@@ -161,4 +167,6 @@ void chassis_set_contorl(chassis_move_t *chassis_move_control);
 void chassis_rc_to_control_vector(float *vx_set, float *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 //底盘控制PID计算
 void chassis_control_loop(chassis_move_t *chassis_move_control_loop);
+//返回底盘任务状态
+uint8_t get_chassis_state(void);
 #endif

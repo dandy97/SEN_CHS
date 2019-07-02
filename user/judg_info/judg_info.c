@@ -9,6 +9,8 @@ UART_HandleTypeDef huart3;
 uint8_t JudgeDataBuffer[2][1024];
 static InfantryJudge_Struct InfantryJudge;
 
+static uint32_t hurt_type = 0;
+
 /* USART3 裁判系统 */
 void USART3_Init(void)
 {
@@ -220,6 +222,8 @@ void Judge_Receive(uint8_t *pData)
 	{
  	 	InfantryJudge.Lv = JudgeDataBuffer[0][56];
 		InfantryJudge.Hp = JudgeDataBuffer[0][58] << 8 | JudgeDataBuffer[0][57];	//血量
+		InfantryJudge.mains_power_shooter_output = JudgeDataBuffer[0][69];
+		//printf("%d\r\n",InfantryJudge.mains_power_shooter_output);
 	}
 		
 	if(((JudgeDataBuffer[0][6] << 8 | JudgeDataBuffer[0][5]) == 0x202) && (Verify_CRC16_Check_Sum_1(JudgeDataBuffer[0], 14 + 9) == 1))//功率
@@ -235,9 +239,12 @@ void Judge_Receive(uint8_t *pData)
 
 		
 		InfantryJudge.power_buffer = JudgeDataBuffer[0][16] << 8 | JudgeDataBuffer[0][15]; //缓冲能量
-		InfantryJudge.shooter_heat = JudgeDataBuffer[0][18] << 8 | JudgeDataBuffer[0][17]; //热量
-		
-		//printf("%d\r\n",InfantryJudge.shooter_heat);
+		InfantryJudge.shooter_heat = JudgeDataBuffer[0][18] << 8 | JudgeDataBuffer[0][17]; //热量	
+	}
+	
+	if((JudgeDataBuffer[0][6] << 8 | JudgeDataBuffer[0][5]) == 0x206)// && (Verify_CRC16_Check_Sum_1(JudgeDataBuffer[0], 14 + 9) == 1))//功率
+	{		
+		hurt_type++;
 	}
 	
 	if(((JudgeDataBuffer[0][6] << 8 | JudgeDataBuffer[0][5]) == 0x207))// && (Verify_CRC16_Check_Sum_1(JudgeDataBuffer, 6 + 9) == 1))//射速
@@ -256,5 +263,10 @@ void Judge_Receive(uint8_t *pData)
 const InfantryJudge_Struct *get_Judg_Info_Measure_Point(void)
 {
 	return &InfantryJudge;
+}
+
+uint32_t get_Hurt_Type(void)
+{
+	return hurt_type;
 }
 

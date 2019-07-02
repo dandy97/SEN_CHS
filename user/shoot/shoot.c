@@ -19,6 +19,7 @@ static Shoot_Motor_t trigger_motor;          //射击数据
 static const RC_ctrl_t *shoot_rc; //遥控器指针
 static PidTypeDef trigger_motor_pid;         //电机PID
 static shoot_mode_e shoot_mode = SHOOT_STOP; //射击状态机
+static shoot_mode_e last_shoot_mode = SHOOT_STOP; //射击状态机
 
 void shoot_init(void)
 {
@@ -34,44 +35,62 @@ void shoot_init(void)
 
 }
 
-static uint32_t open_fric_time = 0;
 //射击状态机设置，遥控器上拨一次开启，再上拨关闭，下拨1次发射1颗，一直处在下，则持续发射，用于3min准备时间清理子弹
 void Shoot_Set_Mode(void)
 {
-	//上拨判断， 一次开启，再次关闭
-	if(trigger_motor.shoot_motor_measure->bullet_launch == 0x01)
+	switch(trigger_motor.shoot_motor_measure->shoot_mode)//右边遥控拨杆
 	{
-		shoot_mode = SHOOT_STOP;
-	}
-
-	//处于中档， 开启摩擦轮
-	if((trigger_motor.shoot_motor_measure->bullet_launch == 3) && (trigger_motor.shoot_motor_measure->chassis_mode == 3))
-	{
-		shoot_mode = SHOOT_READY;
-		open_fric_time = 0;
-	}
-
-	if(shoot_mode == SHOOT_READY)
-	{
-		open_fric_time++;
-		//下拨，进入射击状态
-		if((trigger_motor.shoot_motor_measure->bullet_launch == 2) && (trigger_motor.shoot_motor_measure->chassis_mode == 3))
+		case 1://遥控模式
 		{
-			if(open_fric_time > 500)
-			shoot_mode = SHOOT_BULLET;      																																																																																	
+				switch(trigger_motor.shoot_motor_measure->bullet_launch)//左边遥控拨杆
+				{
+					case 1:
+					{
+						last_shoot_mode = shoot_mode;//上一次射击状态
+						shoot_mode = SHOOT_STOP;//不发弹
+						break;
+					}
+					case 3:
+					{
+						last_shoot_mode = shoot_mode;//上一次射击状态
+						shoot_mode = SHOOT_READY;//准备发弹
+						trigger_motor.shoot_ready_time = xTaskGetTickCount();
+						break;
+					}
+					case 2:
+					{
+						if((xTaskGetTickCount() - trigger_motor.shoot_ready_time > 1000) && (last_shoot_mode == SHOOT_READY))//准备发弹状态后1秒和上一次射击状态是准备状态
+						{
+							last_shoot_mode = shoot_mode;//上一次射击状态
+							shoot_mode = SHOOT_BULLET;//发射弹丸
+						}
+						break;
+					}
+					default:
+					{
+						break;
+					}
+				}
+			break;
+		}			
+		case 3://自动模式
+		{
+			if(trigger_motor.shoot_motor_measure->target == 1)
+			{
+				shoot_mode = SHOOT_BULLET;//发射弹丸
+			}
+			else
+			{
+				shoot_mode = SHOOT_READY;//准备发弹
+			}
 		}
-	}
-	
-	//遥控右边中间挡开启摩擦轮
-	if(trigger_motor.shoot_motor_measure->chassis_mode == 1)
-	{
-		if(autoshoot_open == 1)
+		case 2:
 		{
-			shoot_mode = AUTO_SHOOT;
+			
 		}
-		else
+		default:
 		{
-			shoot_mode = SHOOT_READY;
+			break;
 		}
 	}
 }
@@ -96,12 +115,17 @@ void Shoot_Feedback_Update(void)
 }
 
 //射击循环
-int16_t shoot_control_loop(uint16_t shoot_heat)
+int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_output)
 {
 	int16_t shoot_CAN_Set_Current; //返回的can值
 
 	Shoot_Set_Mode();        //设置状态机
 	Shoot_Feedback_Update(); //更新数据
+	
+	if(mains_power_shooter_output == 3)
+	{
+		shoot_mode = SHOOT_STOP;
+	}
 	
 	trigger_motor.cmd_time = xTaskGetTickCount();
 	

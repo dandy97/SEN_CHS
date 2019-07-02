@@ -28,6 +28,8 @@ typedef struct
 	uint16_t  shooter_heat;  		//枪口热量
 	uint8_t   bullet_freq;			//射频
 	float     bullet_speed;     //射速
+	uint8_t   mains_power_shooter_output; //shooter口输出
+	uint8_t   hurt_type;        //伤害状态
 }InfantryJudge_Struct;
 
 void USART3_Init(void);
@@ -43,6 +45,7 @@ void Judge_Receive(uint8_t *pData);
 
 //返回裁判系统变量地址，通过指针方式获取原始数据
 const InfantryJudge_Struct *get_Judg_Info_Measure_Point(void);
-
+//返回伤害
+uint32_t get_Hurt_Type(void);
 
 #endif

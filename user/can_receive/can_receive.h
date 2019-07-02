@@ -38,11 +38,14 @@ typedef struct
   int32_t  filter_rate;                   //角速度
 	int32_t  last_filter_rate;              //上次角速度
 	
+	uint8_t target;                        //发现目标
+	
 	float speed_raw;
 	float speed_set;
 	
 	uint16_t bullet_launch;								//拨盘启动标志
 	uint16_t chassis_mode;                //底盘模式
+	uint16_t shoot_mode;
 } motor_measure_t;
 
 //陀螺仪数据结构体
