@@ -104,9 +104,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 				case 0x300:
 				{
 					if((Data[0]<<8 | Data[1]) < 1000)
-					tof_data.dis_r = Data[0]<<8 | Data[1];
+					tof_data.dis_l = Data[0]<<8 | Data[1];
 					if((Data[2]<<8 | Data[3]) < 1000)
-					tof_data.dis_l = Data[2]<<8 | Data[3];
+					tof_data.dis_r = Data[2]<<8 | Data[3];
 					break;
 				}
 				default:
@@ -213,39 +213,27 @@ void CAN_CMD_GIMBAL(int16_t motor1, int16_t motor2, int16_t motor3, int16_t moto
 	HAL_CAN_AddTxMessage(&hcan1, &TxMeg, Data, &pTxMailbox);
 }
 
-//发送陀螺仪控制命令 陀螺仪接收ID：100; mode:0x30为校准模式，time为校准时间，1000ms左右就行。
-void CAN_CMD_GYRO_CALI(uint8_t mode, uint16_t time)
+//发送底盘摩擦轮电源信息
+void CAN_FRIC_INFO(uint8_t mode)
 {
 	uint8_t Data[8];
 	uint32_t pTxMailbox;
 	CAN_TxHeaderTypeDef TxMeg;
 	
-	TxMeg.StdId = 100;
+	TxMeg.StdId = 0x301;
 	TxMeg.IDE = CAN_ID_STD;
 	TxMeg.RTR = CAN_RTR_DATA;
-	TxMeg.DLC = 0x03;
+	TxMeg.DLC = 0x01;
   Data[0] = mode;
-	Data[1] = time >> 8;
-  Data[2] = time ;
+	Data[1] = 0;
+  Data[2] = 0 ;
 	Data[3] = 0;
 	Data[4] = 0;
 	Data[5] = 0;
 	Data[6] = 0;
 	Data[7] = 0;
 	
-	//10ms内一直发送校准指令给陀螺仪
-	uint32_t tickstart = HAL_GetTick();
-  uint32_t wait = 10;
-
-  if (wait < HAL_MAX_DELAY)
-  {
-    wait += (uint32_t)1;
-  }
-
-  while((HAL_GetTick() - tickstart) < wait)
-  {
-	  HAL_CAN_AddTxMessage(&hcan2, &TxMeg, Data, &pTxMailbox);
-  }
+	HAL_CAN_AddTxMessage(&hcan1, &TxMeg, Data, &pTxMailbox);
 }
 
 //返回底盘电机变量地址，通过指针方式获取原始数据

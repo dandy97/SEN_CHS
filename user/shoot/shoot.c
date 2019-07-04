@@ -75,7 +75,7 @@ void Shoot_Set_Mode(void)
 		}			
 		case 3://自动模式
 		{
-			if(trigger_motor.shoot_motor_measure->target == 1)
+			if((trigger_motor.shoot_motor_measure->target == 1) && (trigger_motor.shoot_motor_measure->bullet_launch == 1))
 			{
 				shoot_mode = SHOOT_BULLET;//发射弹丸
 			}

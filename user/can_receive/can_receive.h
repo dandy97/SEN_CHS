@@ -70,8 +70,8 @@ typedef struct
 void CAN_hook(CAN_RxHeaderTypeDef *rx_message, uint8_t *Data);
 //发送底盘电机控制命令
 void CAN_CMD_CHASSIS(int16_t motor1, int16_t motor2, int16_t motor3, int16_t motor4);
-//发送陀螺仪控制命令
-void CAN_CMD_GYRO_CALI(uint8_t mode, uint16_t time);
+//发送底盘摩擦轮电源信息
+void CAN_FRIC_INFO(uint8_t mode);
 //返回底盘电机变量地址，通过指针方式获取原始数据
 extern const motor_measure_t *get_Chassis_Motor_Measure_Point(uint8_t i);
 //返回拨弹电机变量地址，通过指针方式获取原始数据

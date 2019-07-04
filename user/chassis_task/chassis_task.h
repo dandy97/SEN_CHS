@@ -69,6 +69,7 @@ typedef enum
 	auto_ready = 0,
 	auto_find,
 	auto_attack,
+	auto_six,
 } auto_mode_e;
 
 typedef struct
@@ -140,6 +141,9 @@ typedef struct
 	float gyro_rate;                  //z轴角度变化率
 	float last_angle_z;								//上次z轴角度
 	float angle_z;										//z轴角度
+	
+	int32_t six_pos;
+	int32_t last_six_pos;
 //  fp32 chassis_relative_angle;     //底盘与云台的相对角度，单位 rad/s
 //  fp32 chassis_relative_angle_set; //设置相对云台控制角度
 //  fp32 chassis_yaw_set;

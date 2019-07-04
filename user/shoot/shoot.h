@@ -70,6 +70,6 @@ void Shoot_Set_Mode(void);
 //射击数据更新
 void Shoot_Feedback_Update(void);
 //射击循环
-int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_output);
+int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_output); 
 
 #endif
