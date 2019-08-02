@@ -35,6 +35,7 @@ typedef struct
 	float angle_before_1s;
 	float angle_before_1ts;
 	int16_t given_current;
+	int16_t last_given_current;
 	int8_t ecd_count;
 
 	uint16_t rc_s_time;

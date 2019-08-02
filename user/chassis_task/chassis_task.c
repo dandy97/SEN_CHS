@@ -47,12 +47,12 @@ void chassis_task(void *pvParameters)
 		chassis_control_loop(&chassis_move);
 		//射击任务控制循环
 		Shoot_Can_Set_Current = shoot_control_loop(chassis_move.heat, chassis_move.mains_power_shooter_output);
-		CAN_CMD_CHASSIS(chassis_move.motor_chassis[0].give_current, chassis_move.motor_chassis[1].give_current,	Shoot_Can_Set_Current, (int16_t)(chassis_move.dis_x + 120));
+		CAN_CMD_CHASSIS(chassis_move.motor_chassis[0].give_current, 1000,	Shoot_Can_Set_Current, (int16_t)(chassis_move.dis_x + 120));
 		if((can_send_time++) % 200 == 0)
 		{
 			CAN_FRIC_INFO(chassis_move.mains_power_shooter_output);
 		}
-		Ni_Ming(0xf1,chassis_move.dis_x,0,0,0);
+		//Ni_Ming(0xf1,chassis_move.motor_chassis[0].speed_set, chassis_move.motor_chassis[0].give_current, 0, chassis_move.motor_chassis[0].speed);
 		vTaskDelay(CHASSIS_CONTROL_TIME_MS);
 		chassis_high_water = uxTaskGetStackHighWaterMark(NULL);
 	}
@@ -90,7 +90,7 @@ void chassis_init(chassis_move_t *chassis_move_init)
 	//初始化底盘速度环PID 
 	for (uint8_t i = 0; i < 2; i++)
 	{
-		PID_Init(&chassis_move_init->motor_speed_pid[i], PID_POSITION, motor_speed_pid, M3505_MOTOR_SPEED_PID_MAX_OUT, M3505_MOTOR_SPEED_PID_MAX_IOUT);
+		PID_Init(&chassis_move_init->motor_speed_pid[i], PID_POSITION, motor_speed_pid, 3000, M3505_MOTOR_SPEED_PID_MAX_IOUT);
 	}
 	
 	//初始化底盘位置环PID 
@@ -158,7 +158,7 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 				else if(auto_mode == auto_six)//走A模式
 				{
 					auto_six_time++;
-					if(auto_six_time - six_time > 5000)
+					if(auto_six_time - six_time > 8000)
 					{
 						auto_mode = auto_find;//巡查模式
 					}
@@ -223,11 +223,11 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 	/* ----------------------------------------核心代码、更新里程计-----------------------------------------------*/
 	if(auto_mode == auto_find)//巡逻模式
 	{
-		if(chassis_move_update->gyro_rate > 6)//角速度为正
+		if(chassis_move_update->gyro_rate > 8)//角速度为正
 		{
 			pass_positive = 1;
 		}
-		if((pass_positive == 1) && (chassis_move_update->gyro_rate < -6))//角速度为负
+		if((pass_positive == 1) && (chassis_move_update->gyro_rate < -8))//角速度为负
 		{
 			pass_negative = 1;
 		}
@@ -252,6 +252,15 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 				pass_curve_2 = 0;
 			}
 		}
+	}
+	
+	if(chassis_move_update->tof_l < 80)
+	{
+		chassis_move_update->cail_dis = chassis_move_update->motor_chassis[0].chassis_motor_measure->angle * 0.0506145483f + 100;
+	}
+	else if(chassis_move_update->tof_r < 45)
+	{
+		chassis_move_update->cail_dis = chassis_move_update->motor_chassis[0].chassis_motor_measure->angle * 0.0506145483f - 370;
 	}
 	//里程计 = 电机角度换算 - 过弯时清理角度
 	chassis_move_update->dis_x = (chassis_move_update->motor_chassis[0].chassis_motor_measure->angle * 0.0506145483f) - chassis_move_update->cail_dis;
@@ -279,7 +288,6 @@ void chassis_feedback_update(chassis_move_t *chassis_move_update)
 		//随机点限幅
 		if(chassis_move_update->six_pos > 350) chassis_move_update->six_pos = 200;
 		if(chassis_move_update->six_pos < -20) chassis_move_update->six_pos = 100;
-		//Ni_Ming(0xf1,rand()%400,chassis_move_update->six_pos,0,0);
 	}
 }
 
@@ -311,7 +319,7 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 					{
 						turn_run = 0;
 					}
-					chassis_move_control_loop->motor_chassis[0].pos_set = -200;
+					chassis_move_control_loop->motor_chassis[0].pos_set = -250;
 				}
 				PID_Calc(&chassis_move_control_loop->motor_pos_pid[0], chassis_move_control_loop->dis_x, chassis_move_control_loop->motor_chassis[0].pos_set);//位置环
 				chassis_move_control_loop->motor_chassis[0].speed_set = -(int16_t)chassis_move_control_loop->motor_pos_pid[0].out;//速度环输入
@@ -331,7 +339,7 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 		}			
 		case RC_MODE:
 		{
-			chassis_move_control_loop->motor_chassis[0].speed_set = chassis_move_control_loop->motor_chassis[0].chassis_motor_measure->speed_set * 12.0f; //电机速度输入 (0~4)*12
+			chassis_move_control_loop->motor_chassis[0].speed_set = chassis_move_control_loop->motor_chassis[0].chassis_motor_measure->speed_set * 14.0f; //电机速度输入 (0~4)*12
 			break;
 		}
 		case STOP_MODE:
@@ -346,13 +354,21 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 	}
 	if(auto_mode == auto_six)//加大功率跑
 	{
-		chassis_move_control_loop->motor_pos_pid[0].max_out = 40;
+		chassis_move_control_loop->motor_pos_pid[0].max_out = 80;
 	}
 	else
 	{
 		chassis_move_control_loop->motor_pos_pid[0].max_out = 30;
 	}
 	//计算PID
+	if(fabs(chassis_move_control_loop->motor_speed_pid[0].error[0]) < 20)
+	{
+		chassis_move_control_loop->motor_speed_pid[0].Kp = 180;
+	}
+	else
+	{
+		chassis_move_control_loop->motor_speed_pid[0].Kp = 350;
+	}
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		PID_Calc(&chassis_move_control_loop->motor_speed_pid[i], chassis_move_control_loop->motor_chassis[i].speed, chassis_move_control_loop->motor_chassis[i].speed_set);
@@ -361,7 +377,10 @@ void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
 	//赋值电流值
 	for (uint8_t i = 0; i < 2; i++)
 	{
-		chassis_move_control_loop->motor_chassis[i].give_current = (int16_t)(chassis_move_control_loop->motor_speed_pid[i].out * chassis_move_control_loop->power_buffer / 200.0f) ;
+		if(chassis_move_control_loop->power_buffer > 100)
+			chassis_move_control_loop->motor_chassis[i].give_current = (int16_t)(chassis_move_control_loop->motor_speed_pid[i].out) ;	
+		else
+			chassis_move_control_loop->motor_chassis[i].give_current = (int16_t)(chassis_move_control_loop->motor_speed_pid[i].out * chassis_move_control_loop->power_buffer / 200.0f) ;
 	}
 }
 

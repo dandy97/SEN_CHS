@@ -55,6 +55,7 @@ typedef struct
 	float v_z;
 	float pit;
 	float yaw;
+	float yaw_cheap;
 } gyro_info_t;
 
 //tof数据结构体

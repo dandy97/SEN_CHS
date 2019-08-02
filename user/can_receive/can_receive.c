@@ -1,5 +1,11 @@
 #include "can_receive.h"
 
+#include "stm32f4xx_hal.h"
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "projdefs.h"
+
 //底盘电机数据读取
 #define get_motor_measure(ptr, Data)                             \
     {                                                            \
@@ -54,6 +60,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 					motor_chassis[0].chassis_stop = Data[4];
 					motor_chassis[0].chassis_mode = motor_chassis[1].chassis_mode = motor_trigger.shoot_mode = Data[6];//遥控右边拨杆
 					motor_chassis[0].target = motor_trigger.target =  Data[7];//发现目标
+//					printf("%d %d\r\n",motor_trigger.bullet_launch, motor_chassis[0].target);
 					break;
 				}
 				default:
@@ -97,7 +104,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 					else if((yaw_angle - last_yaw_angle) < -330)
 						yaw_connt++;
 					
-					gyro_info.yaw = yaw_angle + yaw_connt * 360;
+					gyro_info.yaw_cheap = yaw_angle + yaw_connt * 360;
 					last_yaw_angle = yaw_angle;
 					break;
 				}

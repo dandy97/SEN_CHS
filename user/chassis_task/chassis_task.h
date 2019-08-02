@@ -141,6 +141,7 @@ typedef struct
 	float gyro_rate;                  //z轴角度变化率
 	float last_angle_z;								//上次z轴角度
 	float angle_z;										//z轴角度
+	float angle_z_cheap;
 	
 	int32_t six_pos;
 	int32_t last_six_pos;

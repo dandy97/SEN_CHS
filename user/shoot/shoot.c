@@ -25,11 +25,11 @@ void shoot_init(void)
 {
 	autoshoot_open = 0;
 	
-	static const float Trigger_speed_pid[3] = {1200, 2, 0};//P I D
+	static const float Trigger_speed_pid[3] = {500, 2, 0};//P I D
 	//电机指针
 	trigger_motor.shoot_motor_measure = get_Trigger_Motor_Measure_Point();
 	//初始化PID                                                   PID_MAX_OUT     PID_MAX_IOUT
-	PID_Init(&trigger_motor_pid, PID_POSITION, Trigger_speed_pid, 10000,          5000);
+	PID_Init(&trigger_motor_pid, PID_POSITION, Trigger_speed_pid, 5000,         2000);
 	//更新数据
 	Shoot_Feedback_Update();
 
@@ -143,7 +143,7 @@ int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_outp
 	{
 		trigger_motor.angle_before_1s = trigger_motor.shoot_motor_measure->angle;
 	}
-
+	
 	static uint32_t delay_shoot = 0;
 	//射击子弹逻辑（先判断射击状态，再判断卡弹）
 	if((shoot_mode == SHOOT_BULLET) || (shoot_mode == AUTO_SHOOT))
@@ -156,7 +156,7 @@ int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_outp
 			//拨盘速度设置
 			if(trigger_motor.BulletShootCnt < 999)
 			{
-				trigger_motor.speed_set = 8;  
+				trigger_motor.speed_set = 10;  
 			}
 			else 
 			{
@@ -204,11 +204,6 @@ int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_outp
 	{
 		trigger_motor.speed_set = 0;
 	}
-	
-	if(trigger_motor.shoot_motor_measure->bullet_launch == 0x01)
-	{
-		trigger_motor.speed_set = 0;
-	}
 
 //	if(1)
 //	{
@@ -217,9 +212,14 @@ int16_t shoot_control_loop(uint16_t shoot_heat, uint8_t mains_power_shooter_outp
 	//printf("%d\r\n",trigger_motor.BulletShootCnt);
 	//计算拨弹轮电机PID
 	PID_Calc(&trigger_motor_pid, trigger_motor.speed, trigger_motor.speed_set);
-	
+	trigger_motor.last_given_current = trigger_motor.given_current;
+	if((trigger_motor.last_given_current * trigger_motor_pid.out) < 0)
+	{
+		trigger_motor_pid.Iout = 0;
+	}
 	trigger_motor.given_current = (int16_t)(trigger_motor_pid.out);
 	shoot_CAN_Set_Current = trigger_motor.given_current;
+	//Ni_Ming(0xf1,trigger_motor.speed_set, trigger_motor.speed,trigger_motor.given_current,trigger_motor_pid.Iout);
 	
 	//Ni_Ming(0xf1,trigger_motor.speed,0,0,0);
 	
